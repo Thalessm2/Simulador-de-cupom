@@ -1,0 +1,296 @@
+using System;
+using System.Collections.Generic;
+
+class Produto
+{
+    public string Nome { get; set; }
+    public double Preco { get; set; }
+    public double Desconto { get; set; }
+    public double ValorDesconto { get; set; }
+    public double PrecoFinal { get; set; }
+}
+
+class Program
+{
+    static void Main()
+    {
+        Console.Clear();
+
+        Console.WriteLine("==========================================");
+        Console.WriteLine("        SIMULADOR DE CUPOM FISCAL");
+        Console.WriteLine("==========================================");
+
+        // Data e hora da compra
+        DateTime dataCompra = DateTime.Now;
+
+        Console.Write("\nDigite o nome do cliente: ");
+        string cliente = Console.ReadLine() ?? "Cliente";
+
+        // Verifica se o cliente é VIP
+        Console.Write("Cliente VIP? (S/N): ");
+        string respostaVIP = Console.ReadLine()?.ToUpper() ?? "N";
+        bool clienteVIP = respostaVIP == "S";
+
+        // Lista para armazenar os produtos
+        List<Produto> produtos = new List<Produto>();
+
+        Console.WriteLine("\n--- CADASTRO DE PRODUTOS ---");
+
+        int quantidadeProdutos = LerInteiroPositivo(
+            "Quantos produtos deseja adicionar? "
+        );
+
+        // Cadastro dos produtos
+        for (int i = 0; i < quantidadeProdutos; i++)
+        {
+            Console.WriteLine($"\nProduto {i + 1}");
+
+            Console.Write("Nome do produto: ");
+            string nome = Console.ReadLine() ?? "Produto";
+
+            double preco = LerDoublePositivo("Preço do produto: ");
+
+            double desconto = LerPercentual(
+                "Desconto do produto (%): "
+            );
+
+            // Calcula o desconto
+            double valorDesconto = preco * desconto / 100;
+
+            // Calcula o preço final
+            double precoFinal = preco - valorDesconto;
+
+            // Adiciona o produto à lista
+            produtos.Add(new Produto
+            {
+                Nome = nome,
+                Preco = preco,
+                Desconto = desconto,
+                ValorDesconto = valorDesconto,
+                PrecoFinal = precoFinal
+            });
+        }
+
+        // Calcula os totais dos produtos
+        double subtotal = 0;
+        double totalDescontos = 0;
+
+        foreach (Produto produto in produtos)
+        {
+            subtotal += produto.Preco;
+            totalDescontos += produto.ValorDesconto;
+        }
+
+        double totalDepoisDosDescontos = subtotal - totalDescontos;
+
+        // Desconto VIP
+        double descontoVIP = 0;
+
+        if (clienteVIP)
+        {
+            descontoVIP = totalDepoisDosDescontos * 5 / 100;
+            totalDepoisDosDescontos -= descontoVIP;
+        }
+
+        // Cupom promocional
+        double descontoCupom = 0;
+
+        Console.Write("\nDigite o cupom de desconto (ou pressione ENTER): ");
+        string cupom = Console.ReadLine()?.ToUpper() ?? "";
+
+        if (cupom == "PROMO10")
+        {
+            descontoCupom = totalDepoisDosDescontos * 10 / 100;
+            totalDepoisDosDescontos -= descontoCupom;
+
+            Console.WriteLine("Cupom PROMO10 aplicado com sucesso!");
+        }
+        else if (cupom != "")
+        {
+            Console.WriteLine("Cupom inválido.");
+        }
+
+        // Imposto
+        double taxaImposto = LerPercentual(
+            "\nDigite a taxa de imposto (%): "
+        );
+
+        double valorImposto = totalDepoisDosDescontos * taxaImposto / 100;
+
+        double totalFinal = totalDepoisDosDescontos + valorImposto;
+
+        // Forma de pagamento
+        Console.WriteLine("\n--- FORMA DE PAGAMENTO ---");
+        Console.WriteLine("1 - À vista");
+        Console.WriteLine("2 - Parcelado");
+
+        int formaPagamento = LerOpcao(
+            "Escolha uma opção: ",
+            1,
+            2
+        );
+
+        int parcelas = 1;
+        double valorParcela = totalFinal;
+
+        if (formaPagamento == 2)
+        {
+            parcelas = LerInteiroPositivo(
+                "Digite a quantidade de parcelas: "
+            );
+
+            valorParcela = totalFinal / parcelas;
+        }
+
+        // ==========================================
+        // EXIBIÇÃO DO CUPOM FISCAL
+        // ==========================================
+
+        Console.Clear();
+
+        Console.WriteLine("==========================================");
+        Console.WriteLine("             CUPOM FISCAL");
+        Console.WriteLine("==========================================");
+
+        Console.WriteLine($"Data: {dataCompra:dd/MM/yyyy}");
+        Console.WriteLine($"Hora: {dataCompra:HH:mm:ss}");
+        Console.WriteLine($"Cliente: {cliente}");
+        Console.WriteLine($"Cliente VIP: {(clienteVIP ? "SIM" : "NÃO")}");
+
+        Console.WriteLine("------------------------------------------");
+        Console.WriteLine("PRODUTOS");
+        Console.WriteLine("------------------------------------------");
+
+        foreach (Produto produto in produtos)
+        {
+            Console.WriteLine($"\nProduto: {produto.Nome}");
+            Console.WriteLine($"Preço original: R$ {produto.Preco:F2}");
+            Console.WriteLine($"Desconto: {produto.Desconto:F2}%");
+            Console.WriteLine($"Valor do desconto: R$ {produto.ValorDesconto:F2}");
+            Console.WriteLine($"Preço final: R$ {produto.PrecoFinal:F2}");
+        }
+
+        Console.WriteLine("------------------------------------------");
+        Console.WriteLine("RESUMO DA COMPRA");
+        Console.WriteLine("------------------------------------------");
+
+        Console.WriteLine($"Subtotal:              R$ {subtotal:F2}");
+        Console.WriteLine($"Descontos produtos:    R$ {totalDescontos:F2}");
+
+        if (clienteVIP)
+        {
+            Console.WriteLine($"Desconto VIP (5%):     R$ {descontoVIP:F2}");
+        }
+
+        if (descontoCupom > 0)
+        {
+            Console.WriteLine($"Desconto PROMO10 (10%): R$ {descontoCupom:F2}");
+        }
+
+        Console.WriteLine($"Taxa de imposto:       {taxaImposto:F2}%");
+        Console.WriteLine($"Valor do imposto:      R$ {valorImposto:F2}");
+
+        Console.WriteLine("------------------------------------------");
+        Console.WriteLine($"TOTAL FINAL:           R$ {totalFinal:F2}");
+        Console.WriteLine("------------------------------------------");
+
+        if (formaPagamento == 1)
+        {
+            Console.WriteLine("Pagamento: À vista");
+            Console.WriteLine($"Valor pago: R$ {totalFinal:F2}");
+        }
+        else
+        {
+            Console.WriteLine($"Pagamento: {parcelas}x");
+            Console.WriteLine($"Valor de cada parcela: R$ {valorParcela:F2}");
+        }
+
+        Console.WriteLine("==========================================");
+        Console.WriteLine("       OBRIGADO PELA PREFERÊNCIA!");
+        Console.WriteLine("==========================================");
+
+        Console.WriteLine("\nPressione ENTER para sair...");
+        Console.ReadLine();
+    }
+
+    // ------------------------------------------
+    // FUNÇÃO PARA LER NÚMERO DECIMAL
+    // ------------------------------------------
+
+    static double LerDoublePositivo(string mensagem)
+    {
+        double valor;
+        while (true)
+        {
+            Console.Write(mensagem);
+            if (double.TryParse(Console.ReadLine(), out valor) && valor >= 0)
+            {
+                return valor;
+            }
+
+            Console.WriteLine("Valor inválido. Digite um número válido.");
+        }
+    }
+
+    // ------------------------------------------
+    // FUNÇÃO PARA LER PORCENTAGEM
+    // ------------------------------------------
+
+    static double LerPercentual(string mensagem)
+    {
+        double valor;
+        while (true)
+        {
+            Console.Write(mensagem);
+            if (double.TryParse(Console.ReadLine(), out valor)
+                && valor >= 0
+                && valor <= 100)
+            {
+                return valor;
+            }
+
+            Console.WriteLine(
+                "Porcentagem inválida. Digite um valor entre 0 e 100."
+            );
+        }
+    }
+
+    // ------------------------------------------
+    // FUNÇÃO PARA LER INTEIRO POSITIVO
+    // ------------------------------------------
+
+    static int LerInteiroPositivo(string mensagem)
+    {
+        int valor;
+        while (true)
+        {
+            Console.Write(mensagem);
+            if (int.TryParse(Console.ReadLine(), out valor) && valor > 0)
+            {
+                return valor;
+            }
+            Console.WriteLine(
+                "Valor inválido. Digite um número inteiro maior que zero."
+            );
+        }
+    }
+
+    // ------------------------------------------
+    // FUNÇÃO PARA LER UMA OPÇÃO ENTRE LIMITES
+    // ------------------------------------------
+    static int LerOpcao(string mensagem, int minimo, int maximo)
+    {
+        int opcao;
+        while (true)
+        {
+            Console.Write(mensagem);
+            if (int.TryParse(Console.ReadLine(), out opcao)
+                && opcao >= minimo
+                && opcao <= maximo)
+            {
+                return opcao;
+            }
+            Console.WriteLine("Opção inválida.");
+        }
+    }
+}
